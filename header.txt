@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Cyberpunk Red 扩展
-// @author       Sisyphus
-// @version      1.0.0
+// @author       猫佑Millan
+// @version      1.1.3
 // @description  Cyberpunk Red TRPG 规则扩展，包含检定功能
-// @timestamp    1716500000
+// @timestamp    1779683545
 // @license      MIT
-// @homepageURL  https://github.com/sealdice/javascript
+// @homepageURL  https://github.com/MacMillan1225/sealdice-js-ext-cyberpunkred
 // @diceRequireVer 1.2.0
 // ==/UserScript==

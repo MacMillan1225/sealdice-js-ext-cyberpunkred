@@ -14,6 +14,14 @@ export function rollD10(): number {
 }
 
 /**
+ * 投掷 D6 骰子
+ * @returns 1-6 的随机数
+ */
+export function rollD6(): number {
+  return Math.floor(Math.random() * 6) + 1;
+}
+
+/**
  * 获取角色属性值
  * @param ctx 海豹上下文
  * @param attrName 属性名称

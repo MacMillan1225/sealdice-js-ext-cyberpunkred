@@ -9,6 +9,7 @@ import { registerTemplate } from './template';
 import { createRcCommand } from './commands/rc';
 import { createRiCommand } from './commands/ri';
 import { createInitCommand } from './commands/init';
+import { createNetrCommand } from './commands/netr';
 
 /**
  * 主函数，初始化扩展
@@ -28,6 +29,7 @@ function main() {
   const cmdRC = createRcCommand();
   const cmdRI = createRiCommand();
   const cmdInit = createInitCommand();
+  const cmdNetr = createNetrCommand();
 
   // 注册指令（支持别名）
   for (const alias of CMD_ALIASES.rc) {
@@ -40,6 +42,10 @@ function main() {
 
   for (const alias of CMD_ALIASES.init) {
     ext.cmdMap[alias] = cmdInit;
+  }
+
+  for (const alias of CMD_ALIASES.netr) {
+    ext.cmdMap[alias] = cmdNetr;
   }
 
   console.log('[CPR] Cyberpunk Red 扩展已加载');

@@ -33,7 +33,7 @@ export const CPR_TEMPLATE = {
   },
 
   attrConfig: {
-    top: ['智力', '反应', '技术', '魅力', '同调', '体格', '移动', '意志', '存在感'],
+    top: ['智力', '反应', '敏捷', '技术', '酷', '意志', '幸运', '移动', '体魄', '共情'],
     sortBy: 'name',
     ignores: ['生命值上限'],
     showAs: {
@@ -43,19 +43,20 @@ export const CPR_TEMPLATE = {
 
   defaults: {
     '生命值': 10,
-    '意志': 5,
-    '体格': 5,
-    '反应': 5,
     '智力': 5,
+    '反应': 5,
+    '敏捷': 5,
     '技术': 5,
-    '魅力': 5,
-    '同调': 5,
+    '酷': 5,
+    '意志': 5,
+    '幸运': 5,
     '移动': 5,
-    '存在感': 5,
+    '体魄': 5,
+    '共情': 5,
   },
 
   defaultsComputed: {
-    '生命值上限': '(体格 + 意志) * 5',
+    '生命值上限': '(体魄 + 意志) * 5',
   },
 
   alias: {
@@ -63,13 +64,14 @@ export const CPR_TEMPLATE = {
     '生命值上限': ['hpmax', 'HPMAX'],
     '智力': ['int', 'INT'],
     '反应': ['ref', 'REF'],
+    '敏捷': ['dex', 'DEX'],
     '技术': ['tech', 'TECH'],
-    '魅力': ['cool', 'COOL'],
-    '同调': ['emp', 'EMP'],
-    '体格': ['body', 'BODY'],
-    '移动': ['mov', 'MOV'],
+    '酷': ['cool', 'COOL'],
     '意志': ['will', 'WILL'],
-    '存在感': ['presence', 'PRE'],
+    '幸运': ['luck', 'LUCK'],
+    '移动': ['mov', 'MOV'],
+    '体魄': ['body', 'BODY'],
+    '共情': ['emp', 'EMP'],
   },
 } as const;
 
@@ -78,6 +80,7 @@ export const CMD_ALIASES = {
   rc: ['rc', '检定'],
   ri: ['ri', '先攻'],
   init: ['init', '先攻管理'],
+  netr: ['netr', '网络空间'],
 } as const;
 
 /** 格式化常量 */

@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberpunk RED - Edgerunner Sheet</title>
+    <style>
+        :root {
+            --c-bg: #08090d;
+            --c-card-bg: #0d0f16;
+            --c-card-bg-secondary: #11131d;
+            --c-text-main: #c8d0dc;
+            --c-text-dim: #5c6a7d;
+            --c-text-bright: #e8ecf2;
+            --c-accent-cyan: #00e5ff;
+            --c-accent-magenta: #ff0055;
+            --c-accent-yellow: #ffcc00;
+            --c-accent-cyan-dim: rgba(0, 229, 255, 0.12);
+            --c-accent-magenta-dim: rgba(255, 0, 85, 0.12);
+            --c-accent-yellow-dim: rgba(255, 204, 0, 0.10);
+            --c-danger: #ff3355;
+            --c-hp: #ff1a4d;
+            --c-humanity: #00e5ff;
+            --c-armor: #ffb800;
+            --c-border: #1e2433;
+            --c-border-glow: rgba(0, 229, 255, 0.25);
+            --c-hover: #151825;
+            --c-input-bg: #06080e;
+            --c-input-border: #00e5ff;
+            --font-mono: "SF Mono", "Cascadia Code", "Consolas", "Courier New", monospace;
+            --font-sans: "Rajdhani", "Segoe UI", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+            --font-display: "Orbitron", "Rajdhani", "Segoe UI", sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--c-bg);
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 229, 255, 0.008) 3px, rgba(0, 229, 255, 0.008) 3.5px),
+                radial-gradient(ellipse at 50% 0%, rgba(0, 229, 255, 0.04) 0%, transparent 70%);
+            color: var(--c-text-main);
+            padding: 16px 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--c-border);
+            border-radius: 3px;
+            border: 1px solid rgba(0, 229, 255, 0.15);
+        }
+
+        .sheet-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            background: var(--c-card-bg);
+            border: 1px solid var(--c-border);
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.08), 0 4px 40px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .sheet-container::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 20px;
+            right: 20px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.4), rgba(255, 0, 85, 0.3), rgba(0, 229, 255, 0.4), transparent);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 18px 16px 14px;
+            background: linear-gradient(180deg, rgba(14, 16, 24, 1) 0%, rgba(10, 12, 18, 1) 100%);
+            border-bottom: 1px solid var(--c-border);
+            position: relative;
+        }
+
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #000;
+            border: 2px solid var(--c-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            overflow: hidden;
+            font-size: 26px;
+            color: var(--c-accent-cyan);
+            flex-shrink: 0;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+            font-family: var(--font-display);
+            font-weight: 600;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .name {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            text-transform: uppercase;
+        }
+
+        .role-info {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        .info-item {
+            font-size: 11px;
+            color: var(--c-text-dim);
+        }
+
+        .info-label {
+            color: var(--c-accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-family: var(--font-mono);
+            margin-right: 4px;
+        }
+
+        .info-value {
+            color: var(--c-text-main);
+        }
+
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1px;
+            background: var(--c-border);
+            border-bottom: 1px solid var(--c-border);
+        }
+
+        .status-item {
+            background: var(--c-card-bg-secondary);
+            padding: 12px 10px 10px;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .status-item:hover {
+            background: var(--c-hover);
+        }
+
+        .status-label {
+            font-size: 10px;
+            color: var(--c-text-dim);
+            display: block;
+            margin-bottom: 4px;
+            letter-spacing: 1.5px;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+        }
+
+        .status-val {
+            font-family: var(--font-mono);
+            font-size: 22px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: text-shadow 0.2s;
+        }
+
+        .st-hp .status-val {
+            color: var(--c-hp);
+            text-shadow: 0 0 8px rgba(255, 26, 77, 0.5);
+        }
+
+        .st-hum .status-val {
+            color: var(--c-humanity);
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+        }
+
+        .st-arm .status-val {
+            color: var(--c-armor);
+            text-shadow: 0 0 8px rgba(255, 184, 0, 0.5);
+        }
+
+        .st-neutral .status-val {
+            color: var(--c-text-bright);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1px;
+            background: var(--c-border);
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .left-panel, .right-panel {
+            background: var(--c-card-bg);
+        }
+
+        .section-title {
+            font-family: var(--font-mono);
+            background: rgba(0, 229, 255, 0.04);
+            color: var(--c-accent-cyan);
+            font-size: 11px;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--c-border);
+            border-top: 1px solid rgba(0, 229, 255, 0.12);
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            font-weight: 600;
+        }
+
+        .section-title::before {
+            content: '// ';
+            opacity: 0.5;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1px;
+            background: var(--c-border);
+        }
+
+        .stat-box {
+            background: var(--c-card-bg);
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .stat-box:hover {
+            background: var(--c-hover);
+        }
+
+        .stat-name {
+            color: var(--c-text-main);
+            font-size: 12px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .stat-name:hover {
+            color: var(--c-accent-cyan);
+            text-shadow: 0 0 6px rgba(0, 229, 255, 0.3);
+        }
+
+        .stat-val {
+            font-family: var(--font-mono);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--c-text-bright);
+            cursor: pointer;
+            padding: 2px 8px;
+            border-radius: 2px;
+            transition: background 0.2s;
+        }
+
+        .stat-val:hover {
+            background: rgba(0, 229, 255, 0.1);
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+
+        .skills-container {
+            padding: 12px 14px;
+        }
+
+        .skill-category {
+            margin-bottom: 16px;
+        }
+
+        .skill-category:last-child {
+            margin-bottom: 0;
+        }
+
+        .category-header {
+            font-size: 11px;
+            color: var(--c-accent-magenta);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 0, 85, 0.2);
+            font-weight: 600;
+        }
+
+        .skill-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(30, 36, 51, 0.4);
+            transition: background 0.15s;
+        }
+
+        .skill-item:hover {
+            background: rgba(0, 229, 255, 0.02);
+        }
+
+        .skill-name {
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--c-text-main);
+            transition: color 0.2s;
+            flex: 1;
+        }
+
+        .skill-name:hover {
+            color: var(--c-accent-cyan);
+        }
+
+        .skill-base {
+            font-size: 10px;
+            color: var(--c-text-dim);
+            margin-left: 8px;
+            font-family: var(--font-mono);
+        }
+
+        .skill-val {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--c-text-dim);
+            cursor: pointer;
+            padding: 2px 8px;
+            border-radius: 2px;
+            transition: background 0.2s;
+            min-width: 32px;
+            text-align: center;
+        }
+
+        .skill-val:hover {
+            color: #fff;
+            background: rgba(0, 229, 255, 0.1);
+        }
+
+        .equipment-section {
+            padding: 12px 14px;
+        }
+
+        .equipment-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .equipment-item {
+            background: var(--c-card-bg-secondary);
+            padding: 10px 12px;
+            border-radius: 3px;
+            border: 1px solid var(--c-border);
+        }
+
+        .equipment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .equipment-name {
+            font-size: 13px;
+            color: var(--c-text-bright);
+            font-weight: 600;
+        }
+
+        .equipment-stats {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 11px;
+        }
+
+        .equipment-stat {
+            color: var(--c-text-dim);
+        }
+
+        .equipment-stat-label {
+            color: var(--c-accent-yellow);
+            margin-right: 4px;
+        }
+
+        .inline-editor {
+            width: 60px;
+            background: var(--c-input-bg);
+            color: #fff;
+            border: 1px solid var(--c-input-border);
+            border-radius: 2px;
+            font-family: var(--font-mono);
+            font-size: inherit;
+            font-weight: 600;
+            padding: 4px 6px;
+            text-align: center;
+            box-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
+            outline: none;
+        }
+
+        .inline-editor:focus {
+            box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
+            border-color: #33ecff;
+        }
+
+        .notes-section {
+            padding: 12px 14px;
+        }
+
+        .notes-content {
+            background: var(--c-card-bg-secondary);
+            padding: 10px 12px;
+            border-radius: 3px;
+            border: 1px solid var(--c-border);
+            min-height: 60px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--c-text-main);
+        }
+
+        .empty-msg {
+            padding: 50px 20px;
+            text-align: center;
+            color: var(--c-text-dim);
+            font-style: italic;
+            font-family: var(--font-mono);
+        }
+    </style>
+</head>
+<body>
+    <div id="content"></div>
+
+    <script>
+        var _windowId = null;
+        var _rollDispatchMode = 'default';
+
+        function normalizeRollDispatchMode(mode) {
+            return mode === 'template' ? 'template' : 'default';
+        }
+
+        function withRollDispatchMode(roll) {
+            return Object.assign({}, roll || {}, { dispatchMode: _rollDispatchMode });
+        }
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function postEvent(action, payload) {
+            if (!_windowId) return;
+            window.parent.postMessage({
+                type: 'SEALCHAT_EVENT',
+                version: 1,
+                windowId: _windowId,
+                action: action,
+                payload: payload
+            }, '*');
+        }
+
+        window.sealchat = {
+            onUpdate: function(cb) {
+                window.addEventListener('message', function(e) {
+                    if (e.source !== window.parent) return;
+                    if (e.data && e.data.type === 'SEALCHAT_UPDATE') {
+                        _windowId = e.data.payload.windowId;
+                        cb(e.data.payload);
+                    }
+                });
+            },
+            setRollDispatchMode: function(mode) {
+                _rollDispatchMode = normalizeRollDispatchMode(mode);
+            },
+            roll: function(template, label, args) {
+                postEvent('ROLL_DICE', {
+                    roll: withRollDispatchMode({ template: template, label: label || '', args: args || {} })
+                });
+            },
+            updateAttrs: function(attrs) {
+                postEvent('UPDATE_ATTRS', { attrs: attrs });
+            },
+        };
+
+        var CORE_STATS = ['智力', '反应', '敏捷', '技术', '酷', '意志', '幸运', '移动', '体魄', '共情'];
+        var STATUS_KEYS = ['生命值', '人性', '残废', '重伤阈值', '死亡豁免'];
+        
+        var SKILL_CATEGORIES = {
+            '感知类': ['专注力', '藏匿/搜寻物品', '唇语', '觉察', '追踪'],
+            '体魄类': ['运动', '柔术', '舞蹈', '忍耐', '抵抗拷问/药物', '潜行'],
+            '操控类': ['驾驶地面载具', '驾驶飞行载具', '驾驶水上载具', '骑乘'],
+            '教育类': ['会计', '驯兽', '官僚世故', '商业', '创作', '犯罪学', '密码学', '推理', '教育', '赌博', '语言', '图书馆检索', '本地专家', '科学', '战术', '野外生存'],
+            '战斗类': ['徒手搏斗', '闪避', '武术', '近战武器'],
+            '表演类': ['表演', '乐器演奏'],
+            '远程武器类': ['箭术', '自动武器', '手枪', '重型武器', '抵肩枪械'],
+            '社交类': ['贿赂', '交谈', '察言观色', '审讯', '说服', '个人仪容', '街头智慧', '交易', '衣着与风格'],
+            '技术类': ['飞行载具技术', '基础技术', '赛博技术', '爆破', '电子/安防技术', '急救', '伪造', '地面载具技术', '绘画/素描/雕塑', '医疗', '摄影/影片', '撬锁', '扒窃', '水上载具技术', '武器技术']
+        };
+
+        var STATUS_MAP = {
+            '生命值': { cls: 'st-hp', label: 'HP' },
+            '人性': { cls: 'st-hum', label: 'HUM' },
+            '残废': { cls: 'st-neutral', label: 'CRIPPLED' },
+            '重伤阈值': { cls: 'st-neutral', label: 'SERIOUS' },
+            '死亡豁免': { cls: 'st-neutral', label: 'DEATH SAVE' }
+        };
+
+        function render(data) {
+            var el = document.getElementById('content');
+            if (!data || !data.attrs || Object.keys(data.attrs).length === 0) {
+                el.innerHTML = '<div class="empty-msg">Awaiting edgerunner data uplink...</div>';
+                return;
+            }
+
+            var attrs = data.attrs;
+            var html = '<div class="sheet-container">';
+
+            // Header
+            var avatarUrl = data.avatarUrl || '';
+            var initialChar = escapeHtml((data.name || '?').charAt(0)).toUpperCase();
+            var avatarHtml = avatarUrl ?
+                '<img src="' + escapeHtml(avatarUrl) + '" alt="avatar">' :
+                initialChar;
+
+            html += '<div class="header">';
+            html += '<div class="avatar">' + avatarHtml + '</div>';
+            html += '<div class="info">';
+            html += '<div class="name">' + escapeHtml(data.name || 'Unknown Edgerunner') + '</div>';
+            html += '<div class="role-info">';
+            if (attrs['身份']) {
+                html += '<div class="info-item"><span class="info-label">Role:</span><span class="info-value">' + 
+                    escapeHtml(attrs['身份']) + '</span></div>';
+            }
+            if (attrs['身份能力']) {
+                html += '<div class="info-item"><span class="info-label">Ability:</span><span class="info-value">' + 
+                    escapeHtml(attrs['身份能力']) + '</span></div>';
+            }
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+
+            // Status Bar
+            html += '<div class="status-bar">';
+            STATUS_KEYS.forEach(function(k) {
+                var conf = STATUS_MAP[k];
+                var rawVal = attrs[k] !== undefined ? attrs[k] : '--';
+                html += '<div class="status-item ' + conf.cls + '">';
+                html += '<span class="status-label">' + conf.label + '</span>';
+                html += '<div class="status-val" data-attr="' + escapeHtml(k) + '" data-value="' + 
+                    escapeHtml(String(rawVal)) + '">' + escapeHtml(String(rawVal)) + '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            // Main Content
+            html += '<div class="main-content">';
+            
+            // Left Panel - Core Stats
+            html += '<div class="left-panel">';
+            html += '<div class="section-title">Core Attributes</div>';
+            html += '<div class="stats-grid">';
+            CORE_STATS.forEach(function(k) {
+                var rawVal = attrs[k] !== undefined ? attrs[k] : '';
+                if (rawVal === '') return;
+                html += '<div class="stat-box">';
+                html += '<span class="stat-name" data-roll=".ra ' + escapeHtml(k) + '" data-skill="' + 
+                    escapeHtml(k) + '">' + escapeHtml(k) + '</span>';
+                html += '<span class="stat-val" data-attr="' + escapeHtml(k) + '" data-value="' + 
+                    escapeHtml(String(rawVal)) + '">' + escapeHtml(String(rawVal)) + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            // Notes
+            if (attrs['备注']) {
+                html += '<div class="section-title">Notes</div>';
+                html += '<div class="notes-section">';
+                html += '<div class="notes-content">' + escapeHtml(attrs['备注']) + '</div>';
+                html += '</div>';
+            }
+
+            html += '</div>';
+
+            // Right Panel - Skills
+            html += '<div class="right-panel">';
+            html += '<div class="section-title">Skills</div>';
+            html += '<div class="skills-container">';
+
+            for (var category in SKILL_CATEGORIES) {
+                var skills = SKILL_CATEGORIES[category];
+                var hasSkills = false;
+                var categoryHtml = '<div class="skill-category">';
+                categoryHtml += '<div class="category-header">' + escapeHtml(category) + '</div>';
+                
+                skills.forEach(function(skillName) {
+                    if (attrs[skillName] !== undefined) {
+                        hasSkills = true;
+                        var val = attrs[skillName];
+                        categoryHtml += '<div class="skill-item">';
+                        categoryHtml += '<span class="skill-name" data-roll=".ra ' + escapeHtml(skillName) + 
+                            '" data-skill="' + escapeHtml(skillName) + '">' + escapeHtml(skillName) + '</span>';
+                        categoryHtml += '<span class="skill-val" data-attr="' + escapeHtml(skillName) + 
+                            '" data-value="' + escapeHtml(String(val)) + '">' + escapeHtml(String(val)) + '</span>';
+                        categoryHtml += '</div>';
+                    }
+                });
+                
+                categoryHtml += '</div>';
+                if (hasSkills) {
+                    html += categoryHtml;
+                }
+            }
+
+            html += '</div>';
+            html += '</div>';
+
+            html += '</div>'; // main-content
+
+            // Equipment Section
+            var weapons = [];
+            var armor = [];
+            for (var key in attrs) {
+                if (key.startsWith('武器_')) {
+                    weapons.push({ name: key.replace('武器_', ''), data: attrs[key] });
+                } else if (key.startsWith('护甲_')) {
+                    armor.push({ name: key.replace('护甲_', ''), data: attrs[key] });
+                }
+            }
+
+            if (weapons.length > 0 || armor.length > 0) {
+                html += '<div class="section-title">Equipment</div>';
+                html += '<div class="equipment-section">';
+                html += '<div class="equipment-grid">';
+
+                armor.forEach(function(item) {
+                    html += '<div class="equipment-item">';
+                    html += '<div class="equipment-header">';
+                    html += '<span class="equipment-name">🛡️ ' + escapeHtml(item.name) + '</span>';
+                    html += '</div>';
+                    html += '<div class="equipment-stats">';
+                    if (typeof item.data === 'object') {
+                        for (var prop in item.data) {
+                            html += '<span class="equipment-stat">';
+                            html += '<span class="equipment-stat-label">' + escapeHtml(prop) + ':</span>';
+                            html += escapeHtml(String(item.data[prop]));
+                            html += '</span>';
+                        }
+                    } else {
+                        html += '<span class="equipment-stat">' + escapeHtml(String(item.data)) + '</span>';
+                    }
+                    html += '</div>';
+                    html += '</div>';
+                });
+
+                weapons.forEach(function(item) {
+                    html += '<div class="equipment-item">';
+                    html += '<div class="equipment-header">';
+                    html += '<span class="equipment-name">⚔️ ' + escapeHtml(item.name) + '</span>';
+                    html += '</div>';
+                    html += '<div class="equipment-stats">';
+                    if (typeof item.data === 'object') {
+                        for (var prop in item.data) {
+                            html += '<span class="equipment-stat">';
+                            html += '<span class="equipment-stat-label">' + escapeHtml(prop) + ':</span>';
+                            html += escapeHtml(String(item.data[prop]));
+                            html += '</span>';
+                        }
+                    } else {
+                        html += '<span class="equipment-stat">' + escapeHtml(String(item.data)) + '</span>';
+                    }
+                    html += '</div>';
+                    html += '</div>';
+                });
+
+                html += '</div>';
+                html += '</div>';
+            }
+
+            html += '</div>'; // sheet-container
+            el.innerHTML = html;
+        }
+
+        function openInlineEditor(target) {
+            if (target.dataset.editing === '1') return;
+            var attrKey = target.dataset.attr;
+            var currentVal = target.dataset.value;
+            if (currentVal === '--') currentVal = '';
+
+            var input = document.createElement('input');
+            input.type = 'number';
+            input.value = currentVal;
+            input.className = 'inline-editor';
+
+            var originalWidth = target.offsetWidth;
+            input.style.width = Math.max(originalWidth + 16, 50) + 'px';
+
+            target.textContent = '';
+            target.appendChild(input);
+            target.dataset.editing = '1';
+            input.focus();
+            input.select();
+
+            var commit = function() {
+                var val = input.value.trim();
+                var num = Number(val);
+                if (val === '' || isNaN(num)) {
+                    cancel();
+                    return;
+                }
+                target.textContent = val;
+                target.dataset.value = val;
+                target.dataset.editing = '';
+                var patch = {};
+                patch[attrKey] = num;
+                postEvent('UPDATE_ATTRS', { attrs: patch });
+            };
+
+            var cancel = function() {
+                target.textContent = currentVal || '--';
+                target.dataset.editing = '';
+            };
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            });
+            input.addEventListener('blur', commit);
+            input.addEventListener('click', function(e) { e.stopPropagation(); });
+        }
+
+        document.addEventListener('click', function(e) {
+            var target = e.target;
+
+            if (target.classList.contains('stat-val') ||
+                target.classList.contains('skill-val') ||
+                target.classList.contains('status-val')) {
+                openInlineEditor(target);
+                return;
+            }
+
+            while (target && target !== document.body) {
+                if (target.dataset && target.dataset.roll) {
+                    var rect = target.getBoundingClientRect();
+                    postEvent('ROLL_DICE', {
+                        roll: withRollDispatchMode({
+                            template: target.dataset.roll,
+                            label: target.innerText || target.dataset.skill,
+                            args: { skill: target.dataset.skill },
+                            rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
+                        })
+                    });
+                    return;
+                }
+                target = target.parentElement;
+            }
+        });
+
+        sealchat.onUpdate(render);
+    </script>
+</body>
+</html>
