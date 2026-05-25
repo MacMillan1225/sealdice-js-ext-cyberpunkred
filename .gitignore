@@ -13,3 +13,5 @@ package-lock.json
 .dev/
 dist/
 dev/
+legacy/
+.opencode/

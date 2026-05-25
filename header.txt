@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         模板项目
-// @author       作者名
+// @name         Cyberpunk Red 扩展
+// @author       Sisyphus
 // @version      1.0.0
-// @description  这是海豹的js扩展模板项目，请自行修改信息
-// @timestamp    1674477074
-// 2023/1/23
+// @description  Cyberpunk Red TRPG 规则扩展，包含检定功能
+// @timestamp    1716500000
 // @license      MIT
-// @homepageURL  https://github.com/sealdice/sealdice-js-template
+// @homepageURL  https://github.com/sealdice/javascript
+// @diceRequireVer 1.2.0
 // ==/UserScript==

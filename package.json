@@ -1,7 +1,7 @@
 {
-  "name": "a-long-story",
+  "name": "sealdice-js-ext-cyberpunkred",
   "version": "1.0.0",
-  "description": "once upon a time, ...",
+  "description": "Cyberpunk Red TRPG 规则扩展，包含检定功能",
   "main": "build/index.js",
   "typings": "build/index.d.ts",
   "repository": "https://github.com/sealdice/seal-swordworld",

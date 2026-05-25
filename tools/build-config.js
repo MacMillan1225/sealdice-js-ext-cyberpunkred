@@ -1,4 +1,4 @@
-var filename = 'sealdice-js-ext.js'
+var filename = 'sealdice-js-ext-cyberpunkred.js'
 
 module.exports = {
   dev: {
