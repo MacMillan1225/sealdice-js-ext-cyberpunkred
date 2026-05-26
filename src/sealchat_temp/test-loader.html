@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberpunk RED - Test Loader</title>
+    <style>
+        /* ═══════════════════════════════════════════════════════
+           TEST LOADER UI — Minimal control panel
+           ═══════════════════════════════════════════════════════ */
+        :root {
+            --c-bg: #0a0e18;
+            --c-panel: #0f1320;
+            --c-border: rgba(0, 240, 255, 0.15);
+            --c-accent: #00f0ff;
+            --c-accent-dim: rgba(0, 240, 255, 0.08);
+            --c-text: #b8c5d6;
+            --c-text-dim: #4a5568;
+            --c-success: #00ff88;
+            --c-error: #ff3060;
+            --font-mono: "SF Mono", "Cascadia Code", "Consolas", monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-mono);
+            background: var(--c-bg);
+            color: var(--c-text);
+            min-height: 100vh;
+        }
+
+        /* ── Control Panel ── */
+        .control-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--c-panel);
+            border-bottom: 1px solid var(--c-border);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .panel-title {
+            color: var(--c-accent);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-right: 8px;
+        }
+
+        .btn {
+            background: var(--c-accent-dim);
+            color: var(--c-accent);
+            border: 1px solid var(--c-border);
+            padding: 6px 14px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: rgba(0, 240, 255, 0.15);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+        }
+
+        .btn-success {
+            color: var(--c-success);
+            border-color: rgba(0, 255, 136, 0.2);
+            background: rgba(0, 255, 136, 0.08);
+        }
+
+        .btn-success:hover {
+            background: rgba(0, 255, 136, 0.15);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .status-indicator {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 3px;
+        }
+
+        .status-indicator.success {
+            color: var(--c-success);
+            background: rgba(0, 255, 136, 0.08);
+        }
+
+        .status-indicator.error {
+            color: var(--c-error);
+            background: rgba(255, 48, 96, 0.08);
+        }
+
+        .status-indicator.idle {
+            color: var(--c-text-dim);
+        }
+
+        /* ── Main Layout ── */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            height: 100vh;
+            padding-top: 52px;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+        }
+
+        /* ── JSON Editor Panel ── */
+        .editor-panel {
+            background: var(--c-panel);
+            border-right: 1px solid var(--c-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-header {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--c-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor-title {
+            font-size: 10px;
+            color: var(--c-accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .json-editor {
+            flex: 1;
+            background: #060a12;
+            color: var(--c-text);
+            border: none;
+            padding: 14px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            overflow: auto;
+        }
+
+        .json-editor:focus {
+            background: #080c16;
+        }
+
+        /* ── Drop Zone Overlay ── */
+        .drop-zone {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 240, 255, 0.05);
+            border: 3px dashed var(--c-accent);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .drop-zone.active {
+            display: flex;
+        }
+
+        .drop-zone-text {
+            font-size: 18px;
+            color: var(--c-accent);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        /* ── Preview Panel ── */
+        .preview-panel {
+            overflow: auto;
+            background: #050505;
+        }
+
+        .preview-panel .sheet-container {
+            max-width: 1260px;
+            margin: 0 auto;
+            background: linear-gradient(180deg, rgba(255, 40, 40, 0.05), transparent 18%), #0d0707;
+            border: 1px solid rgba(193, 24, 24, 0.82);
+            box-shadow: 0 0 0 1px rgba(255, 27, 27, 0.16) inset, 0 18px 48px rgba(0, 0, 0, 0.65);
+            clip-path: polygon(18px 0, calc(100% - 54px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px);
+            color: #d6c7bf;
+            font-family: "Rajdhani", "Segoe UI", sans-serif;
+            position: relative;
+        }
+
+        .preview-panel .header,
+        .preview-panel .status-item,
+        .preview-panel .stat-box,
+        .preview-panel .equipment-item,
+        .preview-panel .notes-content,
+        .preview-panel .left-panel,
+        .preview-panel .right-panel {
+            background: linear-gradient(180deg, rgba(20, 9, 9, 0.98), rgba(9, 4, 4, 0.98));
+        }
+
+        .preview-panel .header {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            padding: 18px;
+            border-bottom: 1px solid rgba(255, 45, 45, 0.48);
+        }
+
+        .preview-panel .avatar {
+            width: 82px;
+            height: 82px;
+            border: 1px solid rgba(255, 55, 55, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: #ffd34d;
+            font-family: "Orbitron", sans-serif;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .preview-panel .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-panel .name { color: #ff5348; font: 800 28px "Orbitron", sans-serif; letter-spacing: 2px; text-transform: uppercase; }
+        .preview-panel .role-info { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+        .preview-panel .info-label { color: #ffd34d; margin-right: 6px; font-family: "Cascadia Code", monospace; text-transform: uppercase; }
+        .preview-panel .info-item { font-size: 11px; }
+
+        .preview-panel .status-bar,
+        .preview-panel .main-content,
+        .preview-panel .stats-grid {
+            display: grid;
+            gap: 1px;
+            background: rgba(130, 16, 16, 0.65);
+        }
+
+        .preview-panel .status-bar { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+        .preview-panel .main-content { grid-template-columns: 1fr 2fr; }
+        .preview-panel .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .preview-panel .left-panel,
+        .preview-panel .right-panel { background: rgba(11, 5, 5, 0.98); }
+
+        .preview-panel .section-title {
+            padding: 9px 16px;
+            color: #ff5c4b;
+            font: 700 13px "Orbitron", sans-serif;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, rgba(103, 15, 15, 0.92), rgba(34, 8, 8, 0.96) 55%, transparent 100%);
+            border-bottom: 1px solid rgba(255, 45, 45, 0.3);
+        }
+
+        .preview-panel .section-title::before { content: '//'; color: #ffd34d; margin-right: 8px; }
+        .preview-panel .skills-container,
+        .preview-panel .equipment-section,
+        .preview-panel .notes-section { padding: 12px 14px; }
+
+        .preview-panel .status-item { padding: 10px 12px 12px; min-height: 94px; }
+        .preview-panel .status-item-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .preview-panel .status-icon,
+        .preview-panel .stat-icon,
+        .preview-panel .skill-icon,
+        .preview-panel .equipment-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 61, 61, 0.42);
+            background: rgba(255, 45, 45, 0.08);
+            color: #ffd34d;
+            font-family: "Cascadia Code", monospace;
+        }
+
+        .preview-panel .status-icon { width: 20px; height: 20px; font-size: 10px; }
+        .preview-panel .status-label { color: #ff7c68; font: 10px "Cascadia Code", monospace; letter-spacing: 2px; text-transform: uppercase; }
+        .preview-panel .status-val,
+        .preview-panel .stat-val,
+        .preview-panel .skill-val { font-family: "Orbitron", sans-serif; }
+        .preview-panel .status-val { font-size: 28px; color: #fff2ea; margin-bottom: 6px; display: inline-block; }
+        .preview-panel .st-hp .status-val { color: #ff4036; }
+        .preview-panel .st-hum .status-val { color: #ffd34d; }
+        .preview-panel .st-arm .status-val { color: #59f3ff; }
+
+        .preview-panel .segment-bar { display: flex; gap: 3px; margin-top: 4px; }
+        .preview-panel .segment-bar-seg { flex: 1 1 0; height: 8px; background: rgba(44, 12, 12, 0.9); border: 1px solid rgba(255, 58, 58, 0.24); }
+        .preview-panel .segment-bar-seg.is-filled.hp { background: linear-gradient(180deg, #ff6a55, #bf1515); }
+        .preview-panel .segment-bar-seg.is-filled.hum { background: linear-gradient(180deg, #ffe98b, #d4a60b); }
+        .preview-panel .segment-bar-seg.is-filled.arm { background: linear-gradient(180deg, #8fffff, #1ea5b2); }
+
+        .preview-panel .stat-box,
+        .preview-panel .skill-item { align-items: center; }
+        .preview-panel .stat-box {
+            display: grid;
+            grid-template-columns: 24px 1fr auto;
+            gap: 10px;
+            padding: 10px 12px;
+            min-height: 60px;
+        }
+
+        .preview-panel .stat-icon { width: 24px; height: 24px; font-size: 9px; }
+        .preview-panel .stat-name { color: #d6c7bf; font-size: 13px; display: block; }
+        .preview-panel .stat-sub { font-size: 9px; color: #84645e; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; display: block; }
+        .preview-panel .stat-val { font-size: 24px; color: #fff2ea; }
+
+        .preview-panel .category-header { color: #ffd34d; font: 700 11px "Orbitron", sans-serif; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,45,45,0.18); }
+        .preview-panel .skill-item { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; padding: 6px 8px; border-bottom: 1px solid rgba(255, 45, 45, 0.08); }
+        .preview-panel .skill-icon { width: 22px; height: 22px; font-size: 10px; }
+        .preview-panel .skill-name { color: #d6c7bf; font-size: 12px; }
+        .preview-panel .skill-val { font-size: 18px; color: #ff7664; border: 1px solid rgba(255, 55, 55, 0.28); background: rgba(255, 32, 32, 0.06); padding: 1px 9px; min-width: 38px; text-align: center; }
+
+        .preview-panel .notes-content { padding: 12px 14px; border: 1px solid rgba(255, 47, 47, 0.22); white-space: pre-wrap; word-break: break-word; }
+        .preview-panel .equipment-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+        .preview-panel .equipment-item { padding: 12px; border: 1px solid rgba(255, 45, 45, 0.24); min-height: 108px; }
+        .preview-panel .equipment-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .preview-panel .equipment-icon { width: 40px; height: 40px; font-size: 13px; flex-shrink: 0; }
+        .preview-panel .equipment-name { color: #fff2ea; font-size: 13px; font-weight: 700; }
+        .preview-panel .equipment-stats { display: flex; gap: 10px 14px; flex-wrap: wrap; font-size: 11px; margin-left: 50px; }
+        .preview-panel .equipment-stat-label { color: #59f3ff; margin-right: 4px; font-family: "Cascadia Code", monospace; font-size: 10px; text-transform: uppercase; }
+        .preview-panel .inline-editor { background: #090404; color: #fff3e8; border: 1px solid #ff4b3e; padding: 4px 6px; text-align: center; }
+        .preview-panel .empty-msg { padding: 86px 20px; text-align: center; color: #ff6a57; font: 16px "Orbitron", sans-serif; letter-spacing: 2px; text-transform: uppercase; }
+
+        @media (max-width: 900px) {
+            .preview-panel .main-content { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 600px) {
+            .preview-panel .status-bar { grid-template-columns: repeat(2, 1fr); }
+            .preview-panel .stats-grid { grid-template-columns: 1fr; }
+            .preview-panel .equipment-grid { grid-template-columns: 1fr; }
+            .preview-panel .equipment-stats { margin-left: 0; }
+        }
+
+        /* ── Event Log ── */
+        .event-log {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 350px;
+            max-height: 200px;
+            background: var(--c-panel);
+            border-top: 1px solid var(--c-border);
+            border-left: 1px solid var(--c-border);
+            z-index: 1000;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-header {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--c-border);
+            font-size: 10px;
+            color: var(--c-accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .log-clear {
+            color: var(--c-text-dim);
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .log-clear:hover {
+            color: var(--c-accent);
+        }
+
+        .log-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            padding: 4px 6px;
+            margin-bottom: 4px;
+            border-radius: 3px;
+            background: rgba(0, 240, 255, 0.03);
+            border-left: 2px solid var(--c-accent);
+        }
+
+        .log-entry.roll {
+            border-left-color: #ff2d7b;
+        }
+
+        .log-entry.update {
+            border-left-color: #00ff88;
+        }
+
+        .log-entry .log-action {
+            color: var(--c-accent);
+            font-weight: 600;
+        }
+
+        .log-entry.roll .log-action {
+            color: #ff2d7b;
+        }
+
+        .log-entry.update .log-action {
+            color: #00ff88;
+        }
+
+        .log-entry .log-detail {
+            color: var(--c-text-dim);
+            font-size: 10px;
+            margin-top: 2px;
+            word-break: break-all;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           SHEET DESIGN SYSTEM — CP2077 Terminal (from v2.0.html)
+           ═══════════════════════════════════════════════════════ */
+        :root {
+            --c-bg: #050505;
+            --c-card-bg: rgba(12, 4, 4, 0.92);
+            --c-card-bg-secondary: rgba(18, 6, 6, 0.85);
+            --c-text-main: #c8c0b8;
+            --c-text-dim: #5a4a42;
+            --c-text-bright: #f0e8e0;
+            --c-accent-red: #ff003c;
+            --c-accent-red-bright: #ff2244;
+            --c-accent-red-dim: rgba(255, 0, 60, 0.12);
+            --c-accent-yellow: #ffb020;
+            --c-accent-cyan: #00e5ff;
+            --c-hp: #ff003c;
+            --c-humanity: #00e5ff;
+            --c-armor: #ffb020;
+            --c-border: rgba(255, 0, 60, 0.12);
+            --c-border-bright: rgba(255, 0, 60, 0.30);
+            --c-hover: rgba(255, 0, 60, 0.05);
+            --c-input-bg: #0a0202;
+            --c-input-border: #ff003c;
+            --c-danger: #ff003c;
+            --font-mono: "SF Mono", "Cascadia Code", "Consolas", "Courier New", monospace;
+            --font-sans: "Segoe UI", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+            --font-display: "Segoe UI", "Helvetica Neue", "PingFang SC", sans-serif;
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+            --radius-sm: 2px;
+            --radius-md: 3px;
+            --radius-lg: 4px;
+        }
+
+        .sheet-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            background: var(--c-card-bg);
+            border: 1px solid var(--c-border-bright);
+            box-shadow: 0 0 60px rgba(255, 0, 60, 0.06), 0 8px 60px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            position: relative;
+            animation: border-pulse 4s ease-in-out infinite;
+        }
+        @keyframes border-pulse {
+            0%, 100% { border-color: rgba(255, 0, 60, 0.20); }
+            50% { border-color: rgba(255, 0, 60, 0.35); }
+        }
+        .sheet-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, var(--c-accent-red) 8%, var(--c-accent-red-bright) 50%, var(--c-accent-red) 92%, transparent 100%);
+            opacity: 0.9;
+            z-index: 10;
+        }
+        .sheet-container::after {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            pointer-events: none;
+            z-index: 10;
+            background:
+                linear-gradient(var(--c-accent-red), var(--c-accent-red)) 0 0 / 18px 2px no-repeat,
+                linear-gradient(var(--c-accent-red), var(--c-accent-red)) 0 0 / 2px 18px no-repeat,
+                linear-gradient(var(--c-accent-red), var(--c-accent-red)) 100% 0 / 18px 2px no-repeat,
+                linear-gradient(var(--c-accent-red), var(--c-accent-red)) 100% 0 / 2px 18px no-repeat,
+                linear-gradient(var(--c-accent-red), var(--c-accent-red)) 0 100% / 18px 2px no-repeat,
+                linear-gradient(var(--c-accent-red), var(--c-accent-red)) 0 100% / 2px 18px no-repeat,
+                linear-gradient(var(--c-accent-red), var(--c-accent-red)) 100% 100% / 18px 2px no-repeat,
+                linear-gradient(var(--c-accent-red), var(--c-accent-red)) 100% 100% / 2px 18px no-repeat;
+            opacity: 0.5;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            padding: var(--space-xl) var(--space-lg) var(--space-lg);
+            background: linear-gradient(180deg, rgba(255, 0, 60, 0.04) 0%, transparent 100%);
+            border-bottom: 1px solid var(--c-border);
+            position: relative;
+        }
+        .avatar {
+            width: 68px; height: 68px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, #0a0303, #140606);
+            border: 1.5px solid var(--c-border-bright);
+            display: flex; align-items: center; justify-content: center;
+            margin-right: var(--space-lg);
+            overflow: hidden;
+            font-size: 28px;
+            color: var(--c-accent-red);
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(255, 0, 60, 0.15), inset 0 0 20px rgba(255, 0, 60, 0.05);
+            font-family: var(--font-display);
+            font-weight: 700;
+            letter-spacing: 2px;
+            position: relative;
+        }
+        .avatar::after {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, rgba(255, 0, 60, 0.15), transparent, rgba(255, 176, 32, 0.08));
+            pointer-events: none;
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .info { flex: 1; min-width: 0; }
+        .name {
+            font-family: var(--font-display);
+            font-size: 24px; font-weight: 800;
+            color: #fff;
+            letter-spacing: 2px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            position: relative;
+            display: inline-block;
+            text-shadow: 0 0 30px rgba(255, 0, 60, 0.5);
+        }
+        .name::before, .name::after {
+            content: attr(data-text);
+            position: absolute; top: 0; left: 0; right: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .name::before {
+            color: var(--c-accent-cyan);
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            transform: translate(-2px, -1px);
+            opacity: 0;
+            animation: glitch-top 4s infinite;
+        }
+        .name::after {
+            color: var(--c-accent-red);
+            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+            transform: translate(2px, 1px);
+            opacity: 0;
+            animation: glitch-bottom 4s infinite;
+        }
+        @keyframes glitch-top {
+            0%, 92%, 100% { opacity: 0; transform: translate(0); }
+            93% { opacity: 0.8; transform: translate(-3px, -1px); }
+            94% { opacity: 0; }
+            96% { opacity: 0.6; transform: translate(2px, 0); }
+            97% { opacity: 0; }
+        }
+        @keyframes glitch-bottom {
+            0%, 92%, 100% { opacity: 0; transform: translate(0); }
+            93.5% { opacity: 0.7; transform: translate(3px, 1px); }
+            94.5% { opacity: 0; }
+            95.5% { opacity: 0.5; transform: translate(-2px, 0); }
+            96.5% { opacity: 0; }
+        }
+        .role-info { display: flex; gap: var(--space-lg); flex-wrap: wrap; margin-top: 6px; }
+        .info-item { font-size: 11px; color: var(--c-text-dim); display: flex; align-items: center; gap: var(--space-xs); }
+        .info-label { color: var(--c-accent-yellow); text-transform: uppercase; letter-spacing: 1.5px; font-family: var(--font-mono); font-size: 10px; opacity: 0.9; }
+        .info-value { color: var(--c-text-main); }
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+            gap: 1px;
+            background: var(--c-border);
+            border-bottom: 1px solid var(--c-border);
+        }
+        .status-item {
+            background: rgba(8, 3, 3, 0.6);
+            padding: var(--space-md) var(--space-sm) 10px;
+            text-align: center;
+            transition: background 0.25s ease;
+            position: relative;
+        }
+        .status-item:hover { background: var(--c-hover); }
+        .status-label {
+            font-size: 9px; color: var(--c-text-dim);
+            display: block; margin-bottom: 4px;
+            letter-spacing: 2px;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+        }
+        .status-val {
+            font-family: var(--font-mono);
+            font-size: 24px; font-weight: 800;
+            cursor: pointer;
+            transition: text-shadow 0.25s ease;
+            letter-spacing: 1px;
+        }
+        .st-hp .status-val { color: var(--c-hp); text-shadow: 0 0 12px rgba(255, 0, 60, 0.5); }
+        .st-hum .status-val { color: var(--c-humanity); text-shadow: 0 0 12px rgba(0, 229, 255, 0.5); }
+        .st-arm .status-val { color: var(--c-armor); text-shadow: 0 0 12px rgba(255, 176, 32, 0.5); }
+        .st-neutral .status-val { color: var(--c-text-bright); text-shadow: 0 0 8px rgba(240, 232, 224, 0.3); }
+        .progress-bar { display: flex; gap: 2px; margin-top: 6px; padding: 0 4px; }
+        .progress-segment {
+            flex: 1; height: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .progress-segment.filled { border-color: transparent; }
+        .progress-hp .progress-segment.filled { background: var(--c-hp); box-shadow: 0 0 4px rgba(255, 0, 60, 0.5); }
+        .progress-arm .progress-segment.filled { background: var(--c-armor); box-shadow: 0 0 4px rgba(255, 176, 32, 0.4); }
+        .progress-hum .progress-segment.filled { background: var(--c-humanity); box-shadow: 0 0 4px rgba(0, 229, 255, 0.4); }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1px;
+            background: var(--c-border);
+        }
+        @media (max-width: 900px) { .main-content { grid-template-columns: 1fr; } }
+        .left-panel, .right-panel { background: rgba(6, 2, 2, 0.4); }
+        .section-title {
+            font-family: var(--font-mono);
+            background: linear-gradient(90deg, rgba(255, 0, 60, 0.08), transparent);
+            color: var(--c-accent-red);
+            font-size: 10px;
+            padding: 10px var(--space-lg);
+            border-bottom: 1px solid var(--c-border);
+            border-top: 1px solid rgba(255, 0, 60, 0.10);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 600;
+            position: relative;
+        }
+        .section-title::before { content: '>'; opacity: 0.5; margin-right: 6px; font-weight: 400; color: var(--c-accent-red); }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            right: var(--space-lg); top: 50%;
+            transform: translateY(-50%);
+            width: 30px; height: 1px;
+            background: linear-gradient(90deg, var(--c-accent-red), transparent);
+            opacity: 0.4;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1px;
+            background: var(--c-border);
+        }
+        .stat-box {
+            background: rgba(6, 2, 2, 0.5);
+            padding: 10px var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            transition: background 0.2s ease;
+            position: relative;
+        }
+        .stat-box:hover { background: var(--c-hover); }
+        .stat-box::before {
+            content: '';
+            position: absolute; left: 0; top: 20%; bottom: 20%;
+            width: 2px;
+            background: var(--c-accent-red);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .stat-box:hover::before { opacity: 0.6; }
+        .stat-icon {
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            width: 26px; height: 26px;
+            font-size: 8px;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            color: var(--c-accent-red);
+            border: 1px solid var(--c-border-bright);
+            background: rgba(255, 0, 60, 0.06);
+            flex-shrink: 0;
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+        .stat-name {
+            color: var(--c-text-main);
+            font-size: 12px;
+            cursor: pointer;
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+            flex: 1;
+        }
+        .stat-name:hover { color: var(--c-accent-red); text-shadow: 0 0 10px rgba(255, 0, 60, 0.4); }
+        .stat-val {
+            font-family: var(--font-mono);
+            font-size: 17px; font-weight: 700;
+            color: var(--c-text-bright);
+            cursor: pointer;
+            padding: 2px 10px;
+            border-radius: var(--radius-sm);
+            transition: background 0.2s ease, text-shadow 0.2s ease;
+        }
+        .stat-val:hover { background: rgba(255, 0, 60, 0.08); text-shadow: 0 0 12px rgba(255, 0, 60, 0.5); }
+        .skills-container { padding: var(--space-md) var(--space-lg); }
+        .skill-category { margin-bottom: var(--space-lg); }
+        .skill-category:last-child { margin-bottom: 0; }
+        .category-header {
+            font-size: 10px;
+            color: var(--c-accent-yellow);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: var(--space-sm);
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 176, 32, 0.15);
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+        .skill-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: 5px var(--space-sm);
+            border-bottom: 1px solid rgba(255, 0, 60, 0.04);
+            transition: background 0.15s ease;
+            border-radius: var(--radius-sm);
+        }
+        .skill-item:hover { background: rgba(255, 0, 60, 0.03); }
+        .skill-icon {
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            width: 20px; height: 20px;
+            font-size: 10px;
+            color: var(--c-accent-red);
+            border: 1px solid rgba(255, 0, 60, 0.18);
+            background: rgba(255, 0, 60, 0.04);
+            flex-shrink: 0;
+            opacity: 0.7;
+        }
+        .skill-name {
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--c-text-main);
+            transition: color 0.2s ease;
+            flex: 1;
+        }
+        .skill-name:hover { color: var(--c-accent-red); }
+        .skill-base { font-size: 10px; color: var(--c-text-dim); margin-left: var(--space-sm); font-family: var(--font-mono); }
+        .skill-val {
+            font-family: var(--font-mono);
+            font-size: 13px; font-weight: 600;
+            color: var(--c-text-dim);
+            cursor: pointer;
+            padding: 2px 10px;
+            border-radius: var(--radius-sm);
+            transition: background 0.2s ease, color 0.2s ease;
+            min-width: 32px;
+            text-align: center;
+        }
+        .skill-val:hover { color: #fff; background: rgba(255, 0, 60, 0.08); }
+        .equipment-section { padding: var(--space-md) var(--space-lg); }
+        .equipment-grid { display: grid; gap: var(--space-md); }
+        .equipment-item {
+            background: rgba(18, 6, 6, 0.6);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(255, 0, 60, 0.08);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .equipment-item:hover { border-color: rgba(255, 0, 60, 0.20); box-shadow: 0 0 20px rgba(255, 0, 60, 0.06); }
+        .equipment-item::before {
+            content: '';
+            position: absolute; top: 0; left: 0;
+            width: 3px; height: 100%;
+            background: linear-gradient(180deg, var(--c-accent-red), var(--c-accent-yellow));
+            opacity: 0.5;
+        }
+        .equipment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .equipment-name { font-size: 13px; color: var(--c-text-bright); font-weight: 700; letter-spacing: 0.5px; }
+        .equipment-stats { display: flex; gap: var(--space-md); flex-wrap: wrap; font-size: 11px; }
+        .equipment-stat { color: var(--c-text-dim); }
+        .equipment-stat-label { color: var(--c-accent-yellow); margin-right: 4px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .notes-section { padding: var(--space-md) var(--space-lg); }
+        .notes-content {
+            background: rgba(18, 6, 6, 0.5);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(255, 0, 60, 0.06);
+            min-height: 60px;
+            font-size: 12px; line-height: 1.7;
+            color: var(--c-text-main);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .inline-editor {
+            width: 60px;
+            background: var(--c-input-bg);
+            color: #fff;
+            border: 1px solid var(--c-input-border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: inherit; font-weight: 700;
+            padding: 4px 6px;
+            text-align: center;
+            box-shadow: 0 0 12px rgba(255, 0, 60, 0.25), inset 0 0 8px rgba(255, 0, 60, 0.05);
+            outline: none;
+            transition: box-shadow 0.2s ease;
+        }
+        .inline-editor:focus {
+            box-shadow: 0 0 20px rgba(255, 0, 60, 0.4), inset 0 0 12px rgba(255, 0, 60, 0.08);
+            border-color: #ff3355;
+        }
+        .empty-msg {
+            padding: 80px var(--space-xl);
+            text-align: center;
+            color: var(--c-text-dim);
+            font-family: var(--font-mono);
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: relative;
+        }
+        .empty-msg::before { content: '[ '; color: var(--c-accent-red); opacity: 0.5; }
+        .empty-msg::after { content: ' ]'; color: var(--c-accent-red); opacity: 0.5; }
+        @media (max-width: 600px) {
+            .header { padding: var(--space-lg) var(--space-md) var(--space-md); }
+            .avatar { width: 52px; height: 52px; font-size: 22px; margin-right: var(--space-md); }
+            .name { font-size: 18px; letter-spacing: 1px; }
+            .role-info { gap: var(--space-sm); }
+            .status-val { font-size: 20px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .stat-val { font-size: 15px; }
+            .skills-container { padding: var(--space-sm) var(--space-md); }
+            .equipment-section, .notes-section { padding: var(--space-sm) var(--space-md); }
+            .stat-icon { width: 22px; height: 22px; font-size: 7px; }
+            .skill-icon { width: 16px; height: 16px; font-size: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <span class="panel-title">Test Loader</span>
+        <div class="file-input-wrapper">
+            <button class="btn">Load JSON File</button>
+            <input type="file" id="fileInput" accept=".json">
+        </div>
+        <button class="btn" onclick="loadSampleData()">Sample Data</button>
+        <button class="btn btn-success" onclick="applyJson()">Apply</button>
+        <span id="status" class="status-indicator idle">Ready</span>
+    </div>
+
+    <!-- Drop Zone -->
+    <div id="dropZone" class="drop-zone">
+        <span class="drop-zone-text">Drop JSON Here</span>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- JSON Editor -->
+        <div class="editor-panel">
+            <div class="editor-header">
+                <span class="editor-title">JSON Data</span>
+                <div class="editor-actions">
+                    <button class="btn" onclick="formatJson()">Format</button>
+                    <button class="btn" onclick="clearEditor()">Clear</button>
+                </div>
+            </div>
+            <textarea id="jsonEditor" class="json-editor" spellcheck="false" placeholder="Paste JSON here or drag & drop a .json file..."></textarea>
+        </div>
+
+        <!-- Preview -->
+        <div id="preview" class="preview-panel"></div>
+    </div>
+
+    <!-- Event Log -->
+    <div class="event-log">
+        <div class="log-header">
+            <span>Event Log</span>
+            <span class="log-clear" onclick="clearLog()">Clear</span>
+        </div>
+        <div id="logContent" class="log-content"></div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════
+        // SAMPLE DATA — Complete Cyberpunk RED character
+        // ═══════════════════════════════════════════════════════
+        var SAMPLE_DATA = {
+            name: "V. Silverhand",
+            avatarUrl: "",
+            attrs: {
+                "身份": "Solo",
+                "身份能力": "Combat Awareness",
+                "智力": 6,
+                "反应": 8,
+                "敏捷": 7,
+                "技术": 5,
+                "酷": 4,
+                "意志": 6,
+                "幸运": 3,
+                "移动": 6,
+                "体魄": 7,
+                "共情": 4,
+                "生命值": 45,
+                "护甲": 18,
+                "人性": 32,
+                "残废": 0,
+                "重伤阈值": 23,
+                "死亡豁免": 6,
+                "备注": "Night City legend. Cyberware: Neural Link, Cyberarm (Left), Sandevistan, Kiroshi Optics.\n\nBackground: Former Arasaka security, turned edgerunner after the Incident. Trust issues. Keeps a worn photo of someone in their jacket pocket.",
+                "专注力": 4,
+                "觉察": 5,
+                "潜行": 6,
+                "驾驶地面载具": 4,
+                "武术": 5,
+                "近战武器": 7,
+                "闪避": 6,
+                "手枪": 8,
+                "抵肩枪械": 5,
+                "自动武器": 4,
+                "街头智慧": 5,
+                "交谈": 3,
+                "察言观色": 4,
+                "基础技术": 3,
+                "急救": 2,
+                "武器_Militech Pistol": {
+                    "伤害": "2d6",
+                    "射程": "50m",
+                    "弹容": "12",
+                    "品质": "优秀"
+                },
+                "武器_Monokatana": {
+                    "伤害": "3d6",
+                    "类型": "近战",
+                    "品质": "史诗"
+                },
+                "护甲_Medium Armorjack": {
+                    "防御": "18",
+                    "部位": "躯干",
+                    "惩罚": "-2"
+                },
+                "护甲_Lehel Helmet": {
+                    "防御": "18",
+                    "部位": "头部"
+                }
+            }
+        };
+
+        // ═══════════════════════════════════════════════════════
+        // V2.0 SHEET CORE — Embedded from v2.0.html
+        // ═══════════════════════════════════════════════════════
+
+        // CSS will be injected from v2.0.html
+        var V2_CSS = '';
+
+        // Core data models
+        var CORE_STATS = ['智力', '反应', '敏捷', '技术', '酷', '意志', '幸运', '移动', '体魄', '共情'];
+        var STATUS_KEYS = ['生命值', '护甲', '人性', '残废', '重伤阈值', '死亡豁免'];
+
+        var SKILL_CATEGORIES = {
+            '感知类': ['专注力', '藏匿/搜寻物品', '唇语', '觉察', '追踪'],
+            '体魄类': ['运动', '柔术', '舞蹈', '忍耐', '抵抗拷问/药物', '潜行'],
+            '操控类': ['驾驶地面载具', '驾驶飞行载具', '驾驶水上载具', '骑乘'],
+            '教育类': ['会计', '驯兽', '官僚世故', '商业', '创作', '犯罪学', '密码学', '推理', '教育', '赌博', '语言', '图书馆检索', '本地专家', '科学', '战术', '野外生存'],
+            '战斗类': ['徒手搏斗', '闪避', '武术', '近战武器'],
+            '表演类': ['表演', '乐器演奏'],
+            '远程武器类': ['箭术', '自动武器', '手枪', '重型武器', '抵肩枪械'],
+            '社交类': ['贿赂', '交谈', '察言观色', '审讯', '说服', '个人仪容', '街头智慧', '交易', '衣着与风格'],
+            '技术类': ['飞行载具技术', '基础技术', '赛博技术', '爆破', '电子/安防技术', '急救', '伪造', '地面载具技术', '绘画/素描/雕塑', '医疗', '摄影/影片', '撬锁', '扒窃', '水上载具技术', '武器技术']
+        };
+
+        var STATUS_MAP = {
+            '生命值': { cls: 'st-hp', label: '生命值' },
+            '护甲': { cls: 'st-arm', label: '护甲' },
+            '人性': { cls: 'st-hum', label: '人性' },
+            '残废': { cls: 'st-neutral', label: '身体重伤' },
+            '重伤阈值': { cls: 'st-neutral', label: '重伤阈值' },
+            '死亡豁免': { cls: 'st-neutral', label: '死亡豁免' }
+        };
+
+        // Utility functions
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /* ── NEW: Stat icon abbreviations for placeholder boxes ── */
+        var STAT_ICONS = {
+            '智力': 'INT', '反应': 'REF', '敏捷': 'DEX', '技术': 'TECH',
+            '酷': 'COOL', '意志': 'WILL', '幸运': 'LUCK', '移动': 'MOVE',
+            '体魄': 'BODY', '共情': 'EMP'
+        };
+
+        /* ── NEW: Progress bar reference max values and color classes ── */
+        var PROGRESS_MAX = { '生命值': 50, '护甲': 20, '人性': 100 };
+        var PROGRESS_CLS = { '生命值': 'progress-hp', '护甲': 'progress-arm', '人性': 'progress-hum' };
+
+        /* ── NEW: Render segmented progress bar ── */
+        function renderProgressBar(key, value) {
+            var max = PROGRESS_MAX[key];
+            if (!max) return '';
+            var num = Number(value);
+            var segments = 10;
+            var filled = 0;
+            if (!isNaN(num) && num > 0) {
+                var pct = Math.min(100, Math.round((num / max) * 100));
+                filled = Math.round((pct / 100) * segments);
+            }
+            var cls = PROGRESS_CLS[key] || '';
+            var html = '<div class="progress-bar ' + cls + '">';
+            for (var i = 0; i < segments; i++) {
+                html += '<div class="progress-segment' + (i < filled ? ' filled' : '') + '"></div>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        /* ── NEW: Get stat icon placeholder text ── */
+        function getStatIcon(name) {
+            return STAT_ICONS[name] || '\u25C6';
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // RENDER FUNCTION — Same as v2.0.html
+        // ═══════════════════════════════════════════════════════
+        // RENDER FUNCTION — Same as v2.0.html
+        // ═══════════════════════════════════════════════════════
+        function render(data) {
+            var el = document.getElementById('preview');
+            if (!data || !data.attrs || Object.keys(data.attrs).length === 0) {
+                el.innerHTML = '<div class="empty-msg">Awaiting edgerunner data uplink...</div>';
+                return;
+            }
+
+            var attrs = data.attrs;
+            var html = '<div class="sheet-container">';
+
+            // Header
+            var avatarUrl = data.avatarUrl || '';
+            var initialChar = escapeHtml((data.name || '?').charAt(0)).toUpperCase();
+            var avatarHtml = avatarUrl
+                ? '<img src="' + escapeHtml(avatarUrl) + '" alt="avatar">'
+                : initialChar;
+
+            html += '<div class="header">';
+            html += '<div class="avatar">' + avatarHtml + '</div>';
+            html += '<div class="info">';
+            html += '<div class="name" data-text="' + escapeHtml(data.name || 'Unknown Edgerunner') + '">' +
+                escapeHtml(data.name || 'Unknown Edgerunner') + '</div>';
+            html += '<div class="role-info">';
+            if (attrs['身份']) {
+                html += '<div class="info-item"><span class="info-label">Role</span><span class="info-value">' +
+                    escapeHtml(attrs['身份']) + '</span></div>';
+            }
+            if (attrs['身份能力']) {
+                html += '<div class="info-item"><span class="info-label">Ability</span><span class="info-value">' +
+                    escapeHtml(attrs['身份能力']) + '</span></div>';
+            }
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+
+            // Status Bar
+            html += '<div class="status-bar">';
+            STATUS_KEYS.forEach(function(k) {
+                var conf = STATUS_MAP[k];
+                var rawVal = attrs[k] !== undefined ? attrs[k] : '--';
+                html += '<div class="status-item ' + conf.cls + '">';
+                html += '<span class="status-label">' + conf.label + '</span>';
+                html += '<div class="status-val" data-attr="' + escapeHtml(k) + '" data-value="' +
+                    escapeHtml(String(rawVal)) + '">' + escapeHtml(String(rawVal)) + '</div>';
+                /* NEW: Progress bar for HP / Armor / Humanity */
+                html += renderProgressBar(k, rawVal);
+                html += '</div>';
+            });
+            html += '</div>';
+
+            // Main Content
+            html += '<div class="main-content">';
+
+            // Left Panel — Core Stats
+            html += '<div class="left-panel">';
+            html += '<div class="section-title">Core Attributes</div>';
+            html += '<div class="stats-grid">';
+            CORE_STATS.forEach(function(k) {
+                var rawVal = attrs[k] !== undefined ? attrs[k] : '';
+                if (rawVal === '') return;
+                html += '<div class="stat-box">';
+                /* NEW: Icon placeholder */
+                html += '<span class="stat-icon" title="' + escapeHtml(k) + '">' + escapeHtml(getStatIcon(k)) + '</span>';
+                html += '<span class="stat-name" data-roll=".ra ' + escapeHtml(k) +
+                    '" data-skill="' + escapeHtml(k) + '">' + escapeHtml(k) + '</span>';
+                html += '<span class="stat-val" data-attr="' + escapeHtml(k) +
+                    '" data-value="' + escapeHtml(String(rawVal)) + '">' + escapeHtml(String(rawVal)) + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            // Notes
+            if (attrs['备注']) {
+                html += '<div class="section-title">Notes</div>';
+                html += '<div class="notes-section">';
+                html += '<div class="notes-content">' + escapeHtml(attrs['备注']) + '</div>';
+                html += '</div>';
+            }
+
+            html += '</div>';
+
+            // Right Panel — Skills
+            html += '<div class="right-panel">';
+            html += '<div class="section-title">Skills</div>';
+            html += '<div class="skills-container">';
+
+            for (var category in SKILL_CATEGORIES) {
+                var skills = SKILL_CATEGORIES[category];
+                var hasSkills = false;
+                var categoryHtml = '<div class="skill-category">';
+                categoryHtml += '<div class="category-header">' + escapeHtml(category) + '</div>';
+
+                skills.forEach(function(skillName) {
+                    if (attrs[skillName] !== undefined) {
+                        hasSkills = true;
+                        var val = attrs[skillName];
+                        categoryHtml += '<div class="skill-item">';
+                        /* NEW: Icon placeholder */
+                        categoryHtml += '<span class="skill-icon">\u25C6</span>';
+                        categoryHtml += '<span class="skill-name" data-roll=".ra ' + escapeHtml(skillName) +
+                            '" data-skill="' + escapeHtml(skillName) + '">' + escapeHtml(skillName) + '</span>';
+                        categoryHtml += '<span class="skill-val" data-attr="' + escapeHtml(skillName) +
+                            '" data-value="' + escapeHtml(String(val)) + '">' + escapeHtml(String(val)) + '</span>';
+                        categoryHtml += '</div>';
+                    }
+                });
+
+                categoryHtml += '</div>';
+                if (hasSkills) {
+                    html += categoryHtml;
+                }
+            }
+
+            html += '</div>';
+            html += '</div>';
+
+            html += '</div>'; // main-content
+
+            // Equipment Section
+            var weapons = [];
+            var armor = [];
+            for (var key in attrs) {
+                if (key.startsWith('武器_')) {
+                    weapons.push({ name: key.replace('武器_', ''), data: attrs[key] });
+                } else if (key.startsWith('护甲_')) {
+                    armor.push({ name: key.replace('护甲_', ''), data: attrs[key] });
+                }
+            }
+
+            if (weapons.length > 0 || armor.length > 0) {
+                html += '<div class="section-title">Equipment</div>';
+                html += '<div class="equipment-section">';
+                html += '<div class="equipment-grid">';
+
+                armor.forEach(function(item) {
+                    html += '<div class="equipment-item">';
+                    html += '<div class="equipment-header"><span class="equipment-icon">ARM</span><span class="equipment-name">' + escapeHtml(item.name) + '</span></div>';
+                    html += '<div class="equipment-stats">';
+                    var armorData = item.data;
+                    if (typeof armorData === 'string') {
+                        try { armorData = JSON.parse(armorData); } catch(e) {}
+                    }
+                    if (typeof armorData === 'object' && armorData !== null) {
+                        for (var prop in armorData) {
+                            html += '<span class="equipment-stat">';
+                            html += '<span class="equipment-stat-label">' + escapeHtml(prop) + ':</span>';
+                            html += escapeHtml(String(armorData[prop]));
+                            html += '</span>';
+                        }
+                    } else {
+                        html += '<span class="equipment-stat">防御: ' + escapeHtml(String(armorData)) + '</span>';
+                    }
+                    html += '</div>';
+                    html += '</div>';
+                });
+
+                weapons.forEach(function(item) {
+                    html += '<div class="equipment-item">';
+                    html += '<div class="equipment-header"><span class="equipment-icon">WPN</span><span class="equipment-name">' + escapeHtml(item.name) + '</span></div>';
+                    html += '<div class="equipment-stats">';
+                    var weaponData = item.data;
+                    if (typeof weaponData === 'string') {
+                        try { weaponData = JSON.parse(weaponData); } catch(e) {}
+                    }
+                    if (typeof weaponData === 'object' && weaponData !== null) {
+                        for (var prop in weaponData) {
+                            html += '<span class="equipment-stat">';
+                            html += '<span class="equipment-stat-label">' + escapeHtml(prop) + ':</span>';
+                            html += escapeHtml(String(weaponData[prop]));
+                            html += '</span>';
+                        }
+                    } else {
+                        html += '<span class="equipment-stat">' + escapeHtml(String(weaponData)) + '</span>';
+                    }
+                    html += '</div>';
+                    html += '</div>';
+                });
+
+                html += '</div>';
+                html += '</div>';
+            }
+
+            html += '</div>'; // sheet-container
+            el.innerHTML = html;
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // INLINE EDITOR — Same as v2.0.html
+        // ═══════════════════════════════════════════════════════
+        function openInlineEditor(target) {
+            if (target.dataset.editing === '1') return;
+            var attrKey = target.dataset.attr;
+            var currentVal = target.dataset.value;
+            if (currentVal === '--') currentVal = '';
+
+            var input = document.createElement('input');
+            input.type = 'number';
+            input.value = currentVal;
+            input.className = 'inline-editor';
+
+            var originalWidth = target.offsetWidth;
+            input.style.width = Math.max(originalWidth + 16, 50) + 'px';
+
+            target.textContent = '';
+            target.appendChild(input);
+            target.dataset.editing = '1';
+            input.focus();
+            input.select();
+
+            var commit = function() {
+                var val = input.value.trim();
+                var num = Number(val);
+                if (val === '' || isNaN(num)) {
+                    cancel();
+                    return;
+                }
+                target.textContent = val;
+                target.dataset.value = val;
+                target.dataset.editing = '';
+                var patch = {};
+                patch[attrKey] = num;
+                logEvent('UPDATE_ATTRS', patch);
+            };
+
+            var cancel = function() {
+                target.textContent = currentVal || '--';
+                target.dataset.editing = '';
+            };
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            });
+            input.addEventListener('blur', commit);
+            input.addEventListener('click', function(e) { e.stopPropagation(); });
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // EVENT LOGGING — Replaces postEvent for testing
+        // ═══════════════════════════════════════════════════════
+        function logEvent(action, payload) {
+            var logContent = document.getElementById('logContent');
+            var entry = document.createElement('div');
+            entry.className = 'log-entry ' + (action === 'ROLL_DICE' ? 'roll' : 'update');
+
+            var detail = '';
+            if (action === 'ROLL_DICE' && payload.roll) {
+                detail = 'Template: ' + payload.roll.template + ', Label: ' + payload.roll.label;
+            } else if (action === 'UPDATE_ATTRS' && payload.attrs) {
+                detail = JSON.stringify(payload.attrs);
+            }
+
+            entry.innerHTML =
+                '<div class="log-action">' + escapeHtml(action) + '</div>' +
+                '<div class="log-detail">' + escapeHtml(detail) + '</div>';
+
+            logContent.insertBefore(entry, logContent.firstChild);
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // CLICK HANDLER — Same as v2.0.html but logs events
+        // ═══════════════════════════════════════════════════════
+        document.getElementById('preview').addEventListener('click', function(e) {
+            var target = e.target;
+
+            if (target.classList.contains('stat-val') ||
+                target.classList.contains('skill-val') ||
+                target.classList.contains('status-val')) {
+                openInlineEditor(target);
+                return;
+            }
+
+            while (target && target !== document.body) {
+                if (target.dataset && target.dataset.roll) {
+                    var rect = target.getBoundingClientRect();
+                    logEvent('ROLL_DICE', {
+                        roll: {
+                            template: target.dataset.roll,
+                            label: target.innerText || target.dataset.skill,
+                            args: { skill: target.dataset.skill },
+                            rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
+                        }
+                    });
+                    return;
+                }
+                target = target.parentElement;
+            }
+        });
+
+        // ═══════════════════════════════════════════════════════
+        // JSON LOADER — File input, drag & drop, editor
+        // ═══════════════════════════════════════════════════════
+        var editor = document.getElementById('jsonEditor');
+        var status = document.getElementById('status');
+
+        function setStatus(text, type) {
+            status.textContent = text;
+            status.className = 'status-indicator ' + type;
+        }
+
+        function loadSampleData() {
+            editor.value = JSON.stringify(SAMPLE_DATA, null, 2);
+            applyJson();
+            setStatus('Sample loaded', 'success');
+        }
+
+        function applyJson() {
+            var text = editor.value.trim();
+            if (!text) {
+                setStatus('No JSON data', 'error');
+                return;
+            }
+
+            try {
+                var data = JSON.parse(text);
+                render(data);
+                setStatus('Applied', 'success');
+            } catch (e) {
+                setStatus('Invalid JSON', 'error');
+                console.error('JSON parse error:', e);
+            }
+        }
+
+        function formatJson() {
+            try {
+                var data = JSON.parse(editor.value);
+                editor.value = JSON.stringify(data, null, 2);
+                setStatus('Formatted', 'success');
+            } catch (e) {
+                setStatus('Invalid JSON', 'error');
+            }
+        }
+
+        function clearEditor() {
+            editor.value = '';
+            setStatus('Cleared', 'idle');
+        }
+
+        function clearLog() {
+            document.getElementById('logContent').innerHTML = '';
+        }
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                editor.value = e.target.result;
+                applyJson();
+                setStatus('Loaded: ' + file.name, 'success');
+            };
+            reader.onerror = function() {
+                setStatus('Read error', 'error');
+            };
+            reader.readAsText(file);
+        });
+
+        // Drag & drop handlers
+        document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            document.getElementById('dropZone').classList.add('active');
+        });
+
+        document.addEventListener('dragleave', function(e) {
+            if (e.relatedTarget === null) {
+                document.getElementById('dropZone').classList.remove('active');
+            }
+        });
+
+        document.addEventListener('drop', function(e) {
+            e.preventDefault();
+            document.getElementById('dropZone').classList.remove('active');
+
+            var file = e.dataTransfer.files[0];
+            if (!file || !file.name.endsWith('.json')) {
+                setStatus('Please drop a .json file', 'error');
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                editor.value = e.target.result;
+                applyJson();
+                setStatus('Loaded: ' + file.name, 'success');
+            };
+            reader.readAsText(file);
+        });
+
+        // ═══════════════════════════════════════════════════════
+        // INIT — Load sample on start
+        // ═══════════════════════════════════════════════════════
+        loadSampleData();
+    </script>
+</body>
+</html>

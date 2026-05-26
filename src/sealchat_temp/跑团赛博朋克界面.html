@@ -520,7 +520,7 @@
         };
 
         var CORE_STATS = ['智力', '反应', '敏捷', '技术', '酷', '意志', '幸运', '移动', '体魄', '共情'];
-        var STATUS_KEYS = ['生命值', '人性', '残废', '重伤阈值', '死亡豁免'];
+        var STATUS_KEYS = ['生命值', '护甲', '人性', '残废', '重伤阈值', '死亡豁免'];
         
         var SKILL_CATEGORIES = {
             '感知类': ['专注力', '藏匿/搜寻物品', '唇语', '觉察', '追踪'],
@@ -535,11 +535,12 @@
         };
 
         var STATUS_MAP = {
-            '生命值': { cls: 'st-hp', label: 'HP' },
-            '人性': { cls: 'st-hum', label: 'HUM' },
-            '残废': { cls: 'st-neutral', label: 'CRIPPLED' },
-            '重伤阈值': { cls: 'st-neutral', label: 'SERIOUS' },
-            '死亡豁免': { cls: 'st-neutral', label: 'DEATH SAVE' }
+            '生命值': { cls: 'st-hp', label: '生命值' },
+            '护甲': { cls: 'st-arm', label: '护甲' },
+            '人性': { cls: 'st-hum', label: '人性' },
+            '残废': { cls: 'st-neutral', label: '身体重伤' },
+            '重伤阈值': { cls: 'st-neutral', label: '重伤阈值' },
+            '死亡豁免': { cls: 'st-neutral', label: '死亡豁免' }
         };
 
         function render(data) {
@@ -675,15 +676,20 @@
                     html += '<span class="equipment-name">🛡️ ' + escapeHtml(item.name) + '</span>';
                     html += '</div>';
                     html += '<div class="equipment-stats">';
-                    if (typeof item.data === 'object') {
-                        for (var prop in item.data) {
+                    var armorData = item.data;
+                    // 尝试解析 JSON 字符串
+                    if (typeof armorData === 'string') {
+                        try { armorData = JSON.parse(armorData); } catch(e) {}
+                    }
+                    if (typeof armorData === 'object' && armorData !== null) {
+                        for (var prop in armorData) {
                             html += '<span class="equipment-stat">';
                             html += '<span class="equipment-stat-label">' + escapeHtml(prop) + ':</span>';
-                            html += escapeHtml(String(item.data[prop]));
+                            html += escapeHtml(String(armorData[prop]));
                             html += '</span>';
                         }
                     } else {
-                        html += '<span class="equipment-stat">' + escapeHtml(String(item.data)) + '</span>';
+                        html += '<span class="equipment-stat">防御: ' + escapeHtml(String(armorData)) + '</span>';
                     }
                     html += '</div>';
                     html += '</div>';
@@ -695,15 +701,20 @@
                     html += '<span class="equipment-name">⚔️ ' + escapeHtml(item.name) + '</span>';
                     html += '</div>';
                     html += '<div class="equipment-stats">';
-                    if (typeof item.data === 'object') {
-                        for (var prop in item.data) {
+                    var weaponData = item.data;
+                    // 尝试解析 JSON 字符串
+                    if (typeof weaponData === 'string') {
+                        try { weaponData = JSON.parse(weaponData); } catch(e) {}
+                    }
+                    if (typeof weaponData === 'object' && weaponData !== null) {
+                        for (var prop in weaponData) {
                             html += '<span class="equipment-stat">';
                             html += '<span class="equipment-stat-label">' + escapeHtml(prop) + ':</span>';
-                            html += escapeHtml(String(item.data[prop]));
+                            html += escapeHtml(String(weaponData[prop]));
                             html += '</span>';
                         }
                     } else {
-                        html += '<span class="equipment-stat">' + escapeHtml(String(item.data)) + '</span>';
+                        html += '<span class="equipment-stat">' + escapeHtml(String(weaponData)) + '</span>';
                     }
                     html += '</div>';
                     html += '</div>';

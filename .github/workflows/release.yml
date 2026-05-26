@@ -1,0 +1,80 @@
+# .github/workflows/release.yml
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 监听 v 开头的 tag，如 v1.1.3
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许创建 Release
+
+    steps:
+      # 1. 检出代码（完整历史，包含 tag 信息）
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. 设置 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. 提取 Tag 版本号
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          # 去掉 v 前缀，如 v1.1.3 -> 1.1.3
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # 4. 生成构建时间戳
+      - name: Generate timestamp
+        id: get_timestamp
+        run: |
+          # 生成 Unix 时间戳（秒）
+          TIMESTAMP=$(date +%s)
+          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+
+      # 5. 更新 header.txt
+      - name: Update header.txt
+        run: |
+          sed -i 's/@version      .*/@version      '${{ env.VERSION }}'/' header.txt
+          sed -i 's/@timestamp    .*/@timestamp    '${{ env.TIMESTAMP }}'/' header.txt
+          
+          echo "=== 更新后的 header.txt ==="
+          cat header.txt
+
+      # 6. 安装依赖并构建
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      # 7. 验证构建产物
+      - name: Verify build output
+        run: |
+          if [ ! -f "dist/sealdice-js-ext-cyberpunkred.js" ]; then
+            echo "❌ 构建产物不存在！"
+            exit 1
+          fi
+          echo "✅ 构建产物验证通过"
+
+      # 8. 创建 GitHub Release
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/sealdice-js-ext-cyberpunkred.js
+          name: Release ${{ steps.get_version.outputs.version }}
+          generate_release_notes: true  # 自动生成变更日志
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
